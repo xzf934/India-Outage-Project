@@ -1,0 +1,1291 @@
+* generating hydro instrument
+* Last update: 12/21/2021
+
+* import presipatation by states and stateid
+* this dataset covers 1951 to 2007, all states have complete data
+use "G:\My Drive\India_outage_project\weather\weatherpanel_long.dta"
+* check balance: there are 57 obs per state, and 35 states in total, year 1951-2007
+sort state
+sum precip by(state)
+* generate a state and state id link
+* drop year temp cdd precip
+* duplicates drop
+* save "G:\My Drive\India_outage_project\state_to_id.dta"
+
+
+********************************************************************************
+* pair state id for inflow dataset
+* this dataset covers 1985 to 2011, but most states are missing, there are 189 obs in total.
+clear
+use "G:\My Drive\India_outage_project\Generation\inflow_state.dta"
+gen stateid = .
+replace stateid = 2 if state == "ANDHRA PRADESH"
+replace stateid = 12 if state == "GUJARAT"
+replace stateid = 14 if state == "HIMACHAL PRADESH"
+replace stateid = 17 if state == "KARNATAKA"
+replace stateid = 18 if state == "KERALA"
+replace stateid = 26 if state == "ORISSA"
+replace stateid = 20 if state == "MADHYA PRADESH"
+replace stateid = 21 if state == "MAHARASHTRA"
+replace stateid = 28 if state == "PUNJAB"
+replace stateid = 33 if state == "UTTAR PRADESH"
+replace stateid = 34 if state == "UTTARANCHAL"
+
+label variable stateid "State ID"
+
+save "G:\My Drive\India_outage_project\inflow_with_stateid.dta", replace
+
+********************************************************************************
+* Alternatively to the inflow dataset, redo generation through the generation dataset
+use "G:\My Drive\India_outage_project\Generation\Generation.dta"
+gen stateid = .
+replace stateid = 1 if state == "A.& N. Islands" | state == "A. &. N. Islands"
+replace stateid = 2 if state == "Andhra Pradesh"
+replace stateid = 3 if state == "Arunachal Pradesh"
+replace stateid = 4 if state == "Assam"
+replace stateid = 5 if state == "Bihar"
+replace stateid = 6 if state == "Chandigarh"
+replace stateid = 7 if state == "Chhattisgarh"
+replace stateid = 8 if state == "D. & N. Haveli" | state == "D & N Haveli"
+replace stateid = 9 if state == "Daman Diu" | state == "Daman & Diu"
+replace stateid = 10 if state == "Delhi"
+replace stateid = 11 if state == "Goa"
+replace stateid = 12 if state == "Gujarat"
+replace stateid = 13 if state == "Haryana"
+replace stateid = 14 if state == "Himachal Pradesh"
+replace stateid = 15 if state == "Jammu Kashmir" | state == "Jammu & Kashmir"
+replace stateid = 16 if state == "Jharkhand"
+replace stateid = 17 if state == "Karnataka"
+replace stateid = 18 if state == "Kerala"
+replace stateid = 19 if state == "Lakshadweep"
+replace stateid = 20 if state == "Madhya Pradesh"
+replace stateid = 21 if state == "Maharashtra"
+replace stateid = 22 if state == "Manipur"
+replace stateid = 23 if state == "Meghalaya"
+replace stateid = 24 if state == "Mizoram"
+replace stateid = 25 if state == "Nagaland"
+replace stateid = 26 if state == "Orissa" | state == "Odisha"
+replace stateid = 27 if state == "Pondicherry"
+replace stateid = 28 if state == "Punjab"
+replace stateid = 29 if state == "Rajasthan"
+replace stateid = 30 if state == "Sikkim"
+replace stateid = 31 if state == "Tamil Nadu"
+replace stateid = 32 if state == "Tripura"
+replace stateid = 33 if state == "Uttar Pardesh" | state == "Uttar Pradesh"
+replace stateid = 34 if state == "Uttaranchal" | state == "Uttranchal"
+replace stateid = 35 if state == "West Bengal"
+
+label variable stateid "State ID"
+
+* check if all labeled
+tab state if stateid == .
+
+duplicates drop
+drop if stateid == .
+
+* calculate per year using the average of 2 fisical year
+gen year = endyear
+sort stateid year
+gen secondyear_hydro = .
+replace secondyear_hydro = (hydro[_n]+hydro[_n+1])/2 if hydro[_n] != 0
+replace secondyear_hydro = . if hydro[_n] == 0
+replace secondyear_hydro = . if secondyear_hydro == 0
+replace secondyear_hydro = . if stateid[_n]!=stateid[_n+1]
+drop beginyear endyear region state hydro steamcoal diesel gas nuclear wind biomasspower biomassgasifier ui res totalgwh
+rename secondyear_hydro hydrogeneration
+label variable hydrogeneration "Hydro generation (GWh)"
+
+save "G:\My Drive\India_outage_project\hudrogeneration_with_stateid.dta", replace
+
+********************************************************************************
+* match demand with state id
+* this data set covers 1990-2011, some data only have from 2004+, others are relatively complete.
+use "G:\My Drive\India_outage_project\energydemand.dta"
+gen stateid = .
+replace stateid = 1 if state == "Andaman Nicobar Island"
+replace stateid = 2 if state == "Andhra Pradesh"
+replace stateid = 3 if state == "Arunachal Pradesh"
+replace stateid = 4 if state == "Assam"
+replace stateid = 5 if state == "Bihar"
+replace stateid = 6 if state == "Chandigarh"
+replace stateid = 7 if state == "Chhattisgarh"
+replace stateid = 8 if state == "Dadra Nagar Haveli"
+replace stateid = 9 if state == "Daman Diu"
+replace stateid = 10 if state == "Delhi"
+replace stateid = 11 if state == "Goa"
+replace stateid = 12 if state == "Gujarat"
+replace stateid = 13 if state == "Haryana"
+replace stateid = 14 if state == "Himachal Pradesh"
+replace stateid = 15 if state == "Jammu Kashmir"
+replace stateid = 16 if state == "Jharkhand"
+replace stateid = 17 if state == "Karnataka"
+replace stateid = 18 if state == "Kerala"
+replace stateid = 19 if state == "Lakshadweep"
+replace stateid = 20 if state == "Madhya Pradesh"
+replace stateid = 21 if state == "Maharashtra"
+replace stateid = 22 if state == "Manipur"
+replace stateid = 23 if state == "Meghalaya"
+replace stateid = 24 if state == "Mizoram"
+replace stateid = 25 if state == "Nagaland"
+replace stateid = 26 if state == "Orissa" | state == "Odisha"
+replace stateid = 27 if state == "Pondicherry"
+replace stateid = 28 if state == "Punjab"
+replace stateid = 29 if state == "Rajasthan"
+replace stateid = 30 if state == "Sikkim"
+replace stateid = 31 if state == "Tamil Nadu"
+replace stateid = 32 if state == "Tripura"
+replace stateid = 33 if state == "Uttar Pardesh" | state == "Uttar Pradesh"
+replace stateid = 34 if state == "Uttaranchal" | state == "Uttranchal"
+replace stateid = 35 if state == "West Bengal"
+
+* check if all labeled
+tab state if stateid == .
+
+duplicates drop
+* drop errors
+gen id = _n
+* record whether this value is originally missing and obtained by taking the average of the nearby 2. I can also fit the curve linearly before 2008 but in that way year fixed effect is wiped off making the data not mataching with other data to be merged together.
+gen demand_gen_by_avg = 0
+* id=27: Andhra Pradesh has 2 value for 1992 and this one is off the path (low)
+* id=28: Andhra Pradesh has 2 value for 1993 and this one is off the path (low)
+* id=102 : Chandigarh has 2 value for 2001 and this one is off the path (high)
+* id=103 : Chandigarh has 2 value for 2002 and this one is off the path (high)
+* id=104 : Chandigarh has 2 value for 2005 and this one is off the path (high)
+* id=105 : Chandigarh has 2 value for 2006 and this one is off the path (high)
+drop if id == 27|id == 28|id == 102|id == 103|id == 104|id == 105
+* id=40: Arunachal Pradesh has 2 value for 2007 and year 2008 is missing, set the year for the lower one to be 2008 since 2008 is on average lower than other years for most other states
+replace year = 2008 if id == 40
+* id= : Jammu Kashmir has 2 value for 2005 and 2007 is missing, set the year for the higher one to be 2007 to match the overall increasing trend
+replace year = 2007 if id == 236
+* id=4: Andaman Nicobar Island has 2 value for 2008, cannot tell which one is correct, take the average instead
+expand 2 if id == 4
+replace requirementmu = 238 if id == 5
+replace availabilitymu = 182 if id == 5
+drop if id == 4
+* Andaman Nicobar Island does not have 2005, since 2004&2006 have exactly the same value, I created the same for the 2005
+expand 2 if id == 1
+replace id = 564 in 557
+replace availabilitymu = 179 if id == 564
+replace year = 2005 if id == 564
+replace demand_gen_by_avg = 1 if id == 564
+* Andaman Nicobar Island does not have 2009, take the average of 2007 and 2008
+expand 2 if id == 5
+replace id = 565 in 558
+replace requirementmu = 239 if id == 565
+replace availabilitymu = 181 if id == 565
+replace year = 2009 if id == 565
+replace demand_gen_by_avg = 1 if id == 565
+* Chhattisgarh does not have 2005&206, use linear increasing trend to predict
+expand 3 if id == 106
+replace id = 566 in 559
+replace requirementmu = 12524.3 if id == 566
+replace availabilitymu = 12171.7 if id == 566
+replace year = 2005 if id == 566
+replace demand_gen_by_avg = 1 if id == 566
+replace id = 567 in 560
+replace requirementmu = 13301.7 if id == 567
+replace availabilitymu = 12790.3 if id == 567
+replace year = 2006 if id == 567
+replace demand_gen_by_avg = 1 if id == 567
+* Mizoram does not have 1997&2003, take the average of the nearby 2
+expand 2 if id == 374
+replace id = 568 in 561
+replace requirementmu = 196.4 if id == 568
+replace availabilitymu = 173.1 if id == 568
+replace year = 1997 if id == 568
+replace demand_gen_by_avg = 1 if id == 568
+expand 2 if id == 379
+replace id = 569 in 562
+replace requirementmu = 265.4 if id == 569
+replace availabilitymu = 257.35 if id == 569
+replace year = 2003 if id == 569
+replace demand_gen_by_avg = 1 if id == 569
+* Nagaland does not have 2003, take the average of the nearby 2
+expand 2 if id == 398
+replace id = 570 in 563
+replace requirementmu = 310.05 if id == 570 
+replace availabilitymu = 306.6 if id == 570 
+replace year = 2003 if id == 570
+replace demand_gen_by_avg = 1 if id == 570
+* Odisha does not have 2003, take the average of the nearby 2
+expand 2 if id == 417
+replace id = 571 in 564
+replace requirementmu = 13686.5 if id == 571
+replace availabilitymu = 13481 if id == 571 
+replace year = 2003 if id == 571
+replace demand_gen_by_avg = 1 if id == 571
+* Pondicherry does not have 2003
+expand 2 if id == 426
+replace id = 572 in 565
+replace requirementmu = 1382.5 if id == 572
+replace availabilitymu = 1382.5 if id == 572 
+replace year = 2003 if id == 572
+replace demand_gen_by_avg = 1 if id == 572
+* Punjab does not have 2003
+expand 2 if id == 444
+replace id = 574 in 566
+replace requirementmu = 31737.5 if id == 574
+replace availabilitymu = 29348 if id == 574 
+replace year = 2003 if id == 574
+replace demand_gen_by_avg = 1 if id == 574
+* Rajasthan does not have 2003
+expand 2 if id == 463
+replace id = 575 in 567
+replace requirementmu = 27562 if id == 575
+replace availabilitymu = 27178 if id == 575
+replace year = 2003 if id == 575
+replace demand_gen_by_avg = 1 if id == 575
+* Tamil Nadu doe snot have 2003
+expand 2 if id == 489
+replace id = 576 in 568
+replace requirementmu = 47067 if id == 576
+replace availabilitymu = 45523 if id == 576
+replace year = 2003 if id == 576
+replace demand_gen_by_avg = 1 if id == 576
+* Tripura does not have 2003
+expand 2 if id == 508
+replace id = 577 in 569
+replace requirementmu = 704.2 if id == 577
+replace availabilitymu = 656.7 if id == 577
+replace year = 2003 if id == 577
+replace demand_gen_by_avg = 1 if id == 577
+* Uttar Pradesh does not have 2003
+expand 2 if id == 527
+replace id = 578 in 570
+replace requirementmu = 48397 if id == 578
+replace availabilitymu = 39177 if id == 578
+replace year = 2003 if id == 578
+replace demand_gen_by_avg = 1 if id == 578
+* Uttranchal does not have 2003
+expand 2 if id == 538
+replace id = 579 in 571
+replace requirementmu = 4201 if id == 579
+replace availabilitymu = 4070 if id == 579
+replace year = 2003 if id == 579
+replace demand_gen_by_avg = 1 if id == 579
+* West Bengal does not have 2003
+expand 2 if id == 545
+replace id = 580 in 572
+replace requirementmu = 21833 if id == 580 
+replace availabilitymu = 21519 if id == 580 
+replace year = 2003 if id == 580 
+replace demand_gen_by_avg = 1 if id == 580
+* Andhra Pradesh does not have 2003
+expand 2 if id == 18
+replace id = 581 in 573
+replace requirementmu = 48837 if id == 581
+replace availabilitymu = 47055 if id == 581
+replace year = 2003 if id == 581
+replace demand_gen_by_avg = 1 if id == 581
+* Arunachal Pardesh does not have 2003
+expand 2 if id == 36
+replace id = 582 in 574
+replace requirementmu = 160.2 if id == 582
+replace availabilitymu = 159.7 if id == 582
+replace year = 2003 if id == 582
+replace demand_gen_by_avg = 1 if id == 582
+* Assam does not have 2003
+expand 2 if id == 55
+replace id = 583 in 575
+replace requirementmu = 3622.5 if id == 583
+replace availabilitymu = 3465.5 if id == 583
+replace year = 2003 if id == 583
+replace demand_gen_by_avg = 1 if id == 583
+* Bihar does not have 2003
+expand 2 if id == 74
+replace id = 584 in 576
+replace requirementmu = 7648.5 if id == 584
+replace availabilitymu = 6949 if id == 584
+replace year = 2003 if id == 584
+replace demand_gen_by_avg = 1 if id == 584
+* Chandigarh does not have 2003
+expand 2 if id == 93
+replace id = 585 in 577
+replace requirementmu = 1151.5 if id == 585
+replace availabilitymu = 61144.5 if id == 585
+replace year = 2003 if id == 585
+replace demand_gen_by_avg = 1 if id == 585
+* Delhi does not have 2003
+expand 2 if id == 138
+replace id = 586 in 578
+replace requirementmu = 20551.5 if id == 586
+replace availabilitymu = 20259.5 if id == 586
+replace year = 2003 if id == 586
+replace demand_gen_by_avg = 1 if id == 586
+* Goa does not have 2003
+expand 2 if id == 157
+replace id = 587 in 579
+replace requirementmu = 1995.5 if id == 587
+replace availabilitymu = 1995.5 if id == 587
+replace year = 2003 if id == 587
+replace demand_gen_by_avg = 1 if id == 587
+* Gujarat does not have 2003
+expand 2 if id == 176
+replace id = 588 in 580
+replace requirementmu = 59928 if id == 588
+replace availabilitymu = 106040 if id == 588
+replace year = 2003 if id == 588
+replace demand_gen_by_avg = 1 if id == 588
+* Haryana does not have 2003
+expand 2 if id == 195
+replace id = 589 in 581
+replace requirementmu = 21049.5 if id == 589
+replace availabilitymu = 20125 if id == 589
+replace year = 2003 if id == 589
+replace demand_gen_by_avg = 1 if id == 589
+* Himachal Pradesh does not have 2003
+expand 2 if id == 214
+replace id = 590 in 582
+replace requirementmu = 3713.5 if id == 590
+replace availabilitymu = 3629 if id == 590
+replace year = 2003 if id == 590
+replace demand_gen_by_avg = 1 if id == 590
+* Jammu Kashmir does not have 2003
+expand 2 if id == 233
+replace id = 591 in 583
+replace requirementmu = 7690.5 if id == 591
+replace availabilitymu = 6857 if id == 591
+replace year = 2003 if id == 591
+replace demand_gen_by_avg = 1 if id == 591
+* Jharkhand does not have 2003
+expand 2 if id == 242
+replace id = 592 in 584
+replace requirementmu = 2479.5 if id == 592
+replace availabilitymu = 2434 if id == 592
+replace year = 2003 if id == 592
+replace demand_gen_by_avg = 1 if id == 592
+* Karnataka does not have 1998&2003
+expand 2 if id == 256
+replace id = 593 in 585
+replace requirementmu = 27389 if id == 593
+replace availabilitymu = 23521.5 if id == 593
+replace year = 1998 if id == 593
+replace demand_gen_by_avg = 1 if id == 593
+expand 2 if id == 260
+replace id = 594 in 586
+replace requirementmu = 33702.5 if id == 594
+replace availabilitymu = 31385.5 if id == 594
+replace year = 2003 if id == 594
+replace demand_gen_by_avg = 1 if id == 594
+* Kerala does not have 2003
+expand 2 if id == 279
+replace id = 595 in 587
+replace requirementmu = 13159.5 if id == 595
+replace availabilitymu = 12616.5 if id == 595
+replace year = 2003 if id == 595
+replace demand_gen_by_avg = 1 if id == 595
+* Madhya Pradesh does not have 2003
+expand 2 if id == 304
+replace id = 596 in 588
+replace requirementmu = 33257.5 if id == 596
+replace availabilitymu = 28295 if id == 596
+replace year = 2003 if id == 596
+replace demand_gen_by_avg = 1 if id == 596
+* Maharashtra does not have 2003
+expand 2 if id == 323
+replace id = 597 in 589
+replace requirementmu = 89933.5 if id == 597
+replace availabilitymu = 78506.5 if id == 597
+replace year = 2003 if id == 597
+replace demand_gen_by_avg = 1 if id == 597
+* Manipur does not have 2003
+expand 2 if id == 342
+replace id = 598 in 590
+replace requirementmu = 512.2 if id == 598
+replace availabilitymu = 503.2 if id == 598
+replace year = 2003 if id == 598
+replace demand_gen_by_avg = 1 if id == 598
+* Meghalaya does not have 2002
+expand 2 if id == 361
+replace id = 599 in 591
+replace requirementmu = 1161.6 if id == 599 
+replace availabilitymu = 1087.6 if id == 599 
+replace year = 2003 if id == 599 
+replace demand_gen_by_avg = 1 if id == 599 
+
+
+
+* check which year has the most missing values
+sort year
+by year: tab demand_gen_by_avg
+
+
+* below are the previous ones, but it does not match.
+*drop if id == 9|id == 12| id == 27| id == 101| id == 105| id == 104| id == 102| id == 103
+*expand 2 if id == 40
+*replace requirementmu = 408.5 if id == 41
+*replace availabilitymu = 286.5 if id == 41
+*drop if id == 40
+*expand 2 if id == 235
+*replace requirementmu = 10496.5 if id == 236
+*replace availabilitymu = 7827.5 if id == 236
+*drop if id == 235
+
+drop id
+
+label variable stateid "State ID"
+
+save "G:\My Drive\India_outage_project\demand_with_stateid.dta", replace
+
+
+
+********************************************************************************
+* match capacity data with stateid
+* this dataset cover year 1990-2011, before and including 2002 there are 3 states missing, all later data cover all the states. There are also plenty of zeros, sould be treated as missing.
+clear
+use "G:\My Drive\India_outage_project\Generation\Capacity.dta"
+gen stateid = .
+replace stateid = 2 if state == "Andhra Pradesh"
+replace stateid = 12 if state == "Gujarat"
+replace stateid = 14 if state == "Himachal Pradesh"
+replace stateid = 17 if state == "Karnataka"
+replace stateid = 18 if state == "Kerala"
+replace stateid = 26 if state == "Orissa"
+replace stateid = 20 if state == "Madhya Pradesh"
+replace stateid = 21 if state == "Maharashtra"
+replace stateid = 28 if state == "Punjab"
+replace stateid = 33 if state == "Uttar Pardesh" | state == "Uttar Pradesh"
+replace stateid = 34 if state == "Uttaranchal" | state == "Uttranchal"
+
+replace stateid = 1 if state == "A & N Islands" | state == "A. &. N. Islands"
+replace stateid = 3 if state == "Arunachal Pradesh"
+replace stateid = 4 if state == "Assam"
+replace stateid = 5 if state == "Bihar"
+replace stateid = 6 if state == "Chandigarh"
+replace stateid = 7 if state == "Chattisgarh" | state == "Chhattisgarh"
+replace stateid = 8 if state == "D & N Haveli"
+* replace stateid = ??? if state == "D.V.C"
+replace stateid = 9 if state == "Daman & Diu" | state == "Daman & diu"
+replace stateid = 10 if state == "Delhi"
+replace stateid = 11 if state == "Goa"
+replace stateid = 13 if state == "Haryana"
+replace stateid = 15 if state == "Jammu & Kashmir"
+replace stateid = 16 if state == "Jharkhand"
+replace stateid = 19 if state == "Lakshadweep" | state == "Lakshdweep"
+replace stateid = 22 if state == "Manipur"
+replace stateid = 23 if state == "Meghalaya"
+replace stateid = 24 if state == "Mizoram"
+replace stateid = 25 if state == "Nagaland"
+replace stateid = 27 if state == "Pondicherry"
+replace stateid = 29 if state == "Rajasthan"
+replace stateid = 30 if state == "Sikkim"
+replace stateid = 31 if state == "Tamil Nadu"
+replace stateid = 32 if state == "Tripura"
+replace stateid = 35 if state == "West Bengal"
+
+* check if all labeled
+tab state if stateid == .
+
+label variable stateid "State ID"
+drop if stateid==.
+
+save "G:\My Drive\India_outage_project\capacity_with_stateid.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+********************************************************************************
+* Option 1: start from inflow and use simple regression
+
+* MERGE
+* merge capacity with percip: cap(1), perp(2), matched(3)
+merge 1:1 year stateid using "G:\My Drive\India_outage_project\weather\weatherpanel_long.dta", assert(master using match) keep(master using match)
+rename _merge  merge_1
+* 594 matched and 1541 unmatched
+* merge with inflow: cap&prep(1), inflow(2), matched(3): 183 matched
+merge 1:1 year stateid using "G:\My Drive\India_outage_project\inflow_with_stateid.dta", assert(master using match) keep(master using match)
+rename _merge  merge_2
+drop if stateid == .
+* 183 matched and 1958 unmatched
+* merge with demand: all(1), demand(2), matched(3), 552 matched
+merge 1:1 year stateid using "G:\My Drive\India_outage_project\demand_with_stateid.dta", assert(master using match) keep(master using match)
+rename _merge  merge_3
+* 591 matched, 1544 unmatched
+save "G:\My Drive\India_outage_project\merged_inflow_cap_perp_demand.dta", replace
+
+* regression inflow on percip
+* year take the intersection: (1985-2011)n(1951-2007)=(1985-2007), only 140 obsresevoirs
+capture noisily reg inflowsmcm precip
+predict inflow_hat
+label variable inflowsmcm "Hydro inflow"
+label variable precip "Percipitation"
+label variable inflow_hat "Hydro inflow predicted by percipitation"
+* regress generation on predicted inflow
+reg generationgwh inflow_hat
+predict hydrogeneration_hat
+label variable hydrogeneration_hat "Hydrogeneration predicted by inflow (GWh)"
+* compute a capacity factor 
+gen hydro_cf = hydrogeneration_hat / (hydromw*8.76)
+label variable hydro_cf "Hydro power capacity factor (1)"
+
+
+
+
+
+
+
+
+
+
+
+********************************************************************************
+* Option 2: start from generation and use state FE
+clear
+* MERGE
+use "G:\My Drive\India_outage_project\capacity_with_stateid.dta"
+* merge capacity with percip: cap(1), perp(2), matched(3)
+merge 1:1 year stateid using "G:\My Drive\India_outage_project\weather\weatherpanel_long.dta", assert(master using match) keep(master using match)
+rename _merge  merge_1
+* 594 matched and 1541 unmatched
+* merge with generation: gen&prep(1), inflow(2), matched(3)
+merge 1:1 year stateid using "G:\My Drive\India_outage_project\hudrogeneration_with_stateid.dta", assert(master using match) keep(master using match)
+rename _merge  merge_2
+drop if stateid == .
+* 702 matched and 1433 unmatched
+* merge with demand: all(1), demand(2), matched(3), 552 matched
+merge 1:1 year stateid using "G:\My Drive\India_outage_project\demand_with_stateid.dta", assert(master using match) keep(master using match)
+rename _merge  merge_3
+* 591 matched, 1544 unmatched
+save "G:\My Drive\India_outage_project\merged_gen_cap_perp_demand.dta", replace
+
+
+* No lag version
+*************************************************************************************
+* regress generation on percipitation
+reg hydrogeneration precip i.stateid
+label variable precip "Percipitation"
+*reg hydrogeneration precip i.stateid i.year
+predict hydrogeneration_hat
+label variable hydrogeneration_hat "Hydrogeneration predicted by inflow (GWh)"
+* compute a capacity factor 
+gen hydro_cf = hydrogeneration_hat / (hydromw*8.76)
+label variable hydro_cf "Hydro power capacity factor (1)"
+replace hydro_cf = . if hydrogeneration == .
+* take the mean within each state
+bysort stateid : egen hyfro_cf_mean_by_state = mean(hydro_cf)
+* demean the cf
+gen hydro_cf_demean = hydro_cf - hyfro_cf_mean_by_state
+* generate a predicted capacity
+* use the predicted one since the actual one is determined endogenously by economic growth (???)
+bysort year : egen capacity_all_states = total(hydromw)
+gen capacity_all_other_states = capacity_all_states - hydromw
+gen capacity_ratio = hydromw/capacity_all_other_states
+bysort stateid : egen average_capacity_ratio_over_year = mean(capacity_ratio)
+gen capacity_hat = capacity_all_other_states * average_capacity_ratio_over_year
+label variable capacity_hat "Predicted Hydro Capacity (MW)"
+* We do not know contracts between states, therefore don't adjust capacity
+* hydropgen = predictedcap*(sum(cfrated*share*cf-demean)/sum(cfrated*share))
+gen hydrogen_adjusted_by_year_hat = capacity_hat * hydro_cf_demean * 8.76
+label variable hydrogen_adjusted_by_year_hat "Hydro Generation (adjusted by year and demean cf) (GWh)"
+* generate a predicted demand
+bysort year : egen demand_all_states = total(requirementmu)
+gen demand_all_other_states = demand_all_states - requirementmu
+gen demand_ratio = requirementmu/demand_all_other_states
+bysort stateid : egen average_demand_ratio_over_year = mean(demand_ratio)
+gen demand_hat = demand_all_other_states * average_demand_ratio_over_year
+label variable demand_hat "Predicted Demand (GWh)"
+* construct the share of hydro production as a ratio of demand as IV
+gen demean_hydro_ratio_IV = hydrogen_adjusted_by_year_hat/demand_hat
+
+label variable demean_hydro_ratio_IV "IV-demeaned hydro production ratio (%)"
+
+save "G:\My Drive\India_outage_project\merged_gen_cap_perp_demand.dta", replace
+
+* create a IV only dataset
+drop month day region hydromw steammw dieselmw gasmw nuclearmw windmw biomasspowermw biomassgasifiermw uimw resmw totalmw temp cdd precip merge_1 hydrogeneration merge_2 requirementmu availabilitymu demand_gen_by_avg merge_3 hydrogeneration_hat hydro_cf hyfro_cf_mean_by_state hydro_cf_demean capacity_all_states capacity_all_other_states capacity_ratio average_capacity_ratio_over_year capacity_hat hydrogen_adjusted_by_year_hat demand_all_states demand_all_other_states demand_ratio average_demand_ratio_over_year demand_hat
+
+drop if demean_hydro_ratio_IV == .
+
+save "G:\My Drive\India_outage_project\IV_only_option2.dta", replace
+
+
+* adjust to fisical year
+gen id=_n
+gen demean_hydro_ratio_IV_fisical = (demean_hydro_ratio_IV[_n-1]+demean_hydro_ratio_IV)/2 if id != 1
+replace demean_hydro_ratio_IV_fisical = demean_hydro_ratio_IV if id==1
+drop id
+
+save "G:\My Drive\India_outage_project\IV_only_option2_fisical.dta", replace
+
+
+*******************************************************************************
+* with lag version
+clear
+use "G:\My Drive\India_outage_project\merged_gen_cap_perp_demand.dta"
+
+reg hydrogeneration precip L1.precip i.stateid
+
+
+
+
+
+
+********************************
+* Outage dataset: 2003 all missing, others are not balanced, best parts are 05-10
+clear
+use "G:\My Drive\India_outage_project\PowerSupplyPositionofStates\outage.dta"
+gen stateid = .
+replace stateid = 1 if state == "A.& N. Islands" | state == "A. &. N. Islands" | state == "Andaman Nicobar Island"
+replace stateid = 2 if state == "Andhra Pradesh"
+replace stateid = 3 if state == "Arunachal Pradesh"
+replace stateid = 4 if state == "Assam"
+replace stateid = 5 if state == "Bihar"
+replace stateid = 6 if state == "Chandigarh"
+replace stateid = 7 if state == "Chhattisgarh"
+replace stateid = 8 if state == "D. & N. Haveli" | state == "D & N Haveli" | state == "Dadra Nagar Haveli"
+replace stateid = 9 if state == "Daman Diu" | state == "Daman & Diu"
+replace stateid = 10 if state == "Delhi"
+replace stateid = 11 if state == "Goa"
+replace stateid = 12 if state == "Gujarat"
+replace stateid = 13 if state == "Haryana"
+replace stateid = 14 if state == "Himachal Pradesh"
+replace stateid = 15 if state == "Jammu Kashmir" | state == "Jammu & Kashmir"
+replace stateid = 16 if state == "Jharkhand"
+replace stateid = 17 if state == "Karnataka"
+replace stateid = 18 if state == "Kerala"
+replace stateid = 19 if state == "Lakshadweep"
+replace stateid = 20 if state == "Madhya Pradesh"
+replace stateid = 21 if state == "Maharashtra"
+replace stateid = 22 if state == "Manipur"
+replace stateid = 23 if state == "Meghalaya"
+replace stateid = 24 if state == "Mizoram"
+replace stateid = 25 if state == "Nagaland"
+replace stateid = 26 if state == "Orissa" | state == "Odisha"
+replace stateid = 27 if state == "Pondicherry" | state == "Pondicheny"
+replace stateid = 28 if state == "Punjab"
+replace stateid = 29 if state == "Rajasthan"
+replace stateid = 30 if state == "Sikkim"
+replace stateid = 31 if state == "Tamil Nadu"
+replace stateid = 32 if state == "Tripura"
+replace stateid = 33 if state == "Uttar Pardesh" | state == "Uttar Pradesh"
+replace stateid = 34 if state == "Uttaranchal" | state == "Uttranchal"
+replace stateid = 35 if state == "West Bengal"
+
+* there are multiple obs for year x state
+tab year stateid
+* 2001 14
+* 2001	Himachal Pradesh	5683	4457	1226	1	.2157311	14
+* sort stateid year
+* drop in 213
+
+save "G:\My Drive\India_outage_project\PowerSupplyPositionofStates\outage_with_stateid.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+********************************************************************************
+* merge outage with iv
+* Not adjusting fisical year vesus calendar year
+merge 1:1 year stateid using "G:\My Drive\India_outage_project\IV_only_option2.dta"
+
+save "G:\My Drive\India_outage_project\PowerSupplyPositionofStates\outage_and_IV.dta", replace
+
+drop if outage==.
+drop if demean_hydro_ratio_IV==.
+drop _merge
+save "G:\My Drive\India_outage_project\PowerSupplyPositionofStates\outage_and_IV_dropmissing.dta", replace
+
+* adust to fisical year
+merge 1:1 year stateid using "G:\My Drive\India_outage_project\IV_only_option2_fisical.dta"
+drop if outage==.
+drop if demean_hydro_ratio_IV==.
+drop _merge
+save "G:\My Drive\India_outage_project\PowerSupplyPositionofStates\outage_and_IV_dropmissing_fisical.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+********************************************************************************
+* econ output dataset
+clear all
+use "G:\My Drive\India_outage_project\CENSUS.dta"
+
+drop temp_1968 temp_1969 temp_1970 temp_1971 temp_1972 temp_1973 temp_1974 temp_1975 temp_1976 temp_1977 temp_1978 temp_1979 temp_1980 temp_1981 temp_1982 temp_1983 temp_1984 temp_1985 temp_1986 temp_1987 temp_1988 temp_1989 temp_1990 temp_1961 temp_1962 temp_1963 temp_1964 temp_1965 temp_1966 temp_1967 temp_1991
+
+drop precip_1991 precip_1990 precip_1989 precip_1988 precip_1987 precip_1986 precip_1985 precip_1984 precip_1983 precip_1982 precip_1981 precip_1980 precip_1979 precip_1978 precip_1977 precip_1976 precip_1975 precip_1974 precip_1973 precip_1972 precip_1971 precip_1970 precip_1969 precip_1968 precip_1967 precip_1966 precip_1965 precip_1964 precip_1963 precip_1962 precip_1961 precip_1960 precip_1959 precip_1958 precip_1957 precip_1956 precip_1955 precip_1954 precip_1953 precip_1952 precip_1951
+
+drop cddtemp_1961 cddtemp_1962 cddtemp_1963 cddtemp_1964 cddtemp_1965 cddtemp_1966 cddtemp_1967 cddtemp_1968 cddtemp_1969 cddtemp_1970 cddtemp_1971 cddtemp_1972 cddtemp_1973 cddtemp_1974 cddtemp_1975 cddtemp_1976 cddtemp_1977 cddtemp_1978 cddtemp_1979 cddtemp_1980 cddtemp_1981 cddtemp_1982 cddtemp_1983 cddtemp_1984 cddtemp_1985 cddtemp_1986 cddtemp_1987 cddtemp_1988 cddtemp_1989 cddtemp_1990 cddtemp_1991
+
+drop v1 stratum_no sub_stratum_no ent_ser_no
+
+drop net_200607 net_200506 net_200708 net_200809
+
+save "G:\My Drive\India_outage_project\census_relevant_variables.dta", replace
+
+* rename and lable variables
+* make the state id variable name consistant with other datasets 
+
+** candidate for output*******************************************************
+* Value for export
+label variable voe_200607 "value for export, 2006"
+label variable voe_200708 "value for export, 2007"
+label variable voe_200506 "value for export, 2005"
+
+* Annual Revenue
+label variable gop_200809 "nominal revenue (thousands of rubbies, fisical year), 2008"
+label variable gop_200708 "nominal revenue (thousands of rubbies, fisical year), 2007"
+label variable gop_200607 "nominal revenue (thousands of rubbies, fisical year), 2006"
+label variable gop_200506 "nominal revenue (thousands of rubbies, fisical year), 2005"
+label variable gop_200405 "nominal revenue (thousands of rubbies, fisical year), 2004"
+
+* Gross Value Added
+label variable gva_200809 "gross value added, 2008"
+label variable gva_200708 "gross value added, 2007"
+label variable gva_200607 "gross value added, 2006"
+label variable gva_200506 "gross value added, 2005"
+label variable gva_200405 "gross value added, 2004"
+destring gva_200809 gva_200708 gva_200607, ignore("NA") replace
+
+
+
+
+** candidate for controls****************************************************
+rename st_code stateid
+label variable stateid "state id"
+
+label variable sector_code "rural or urban, string"
+
+label variable mkt_val_fa "market value fraction: firm size"
+destring mkt_val_fa, ignore("NA") replace
+
+label variable init_prod_y "initial production year"
+
+label variable org_type "organization type (public/private): 5 types + others + NA"
+
+label variable power_src "power source, string"
+
+label variable oper_nature "casual, perennial or seasonal"
+
+label variable acti_nature "firm type: manufactoring, maintenance or services"
+
+label variable know_how "(investment source?): abroad or domestic"
+
+label variable women_ent "(own by women?): yes or no"
+
+label variable man_by "(managed by?): female or male"
+
+label variable oper_dur_mm "annual operation duration, 0-12 months"
+
+label variable emp_total "total employment"
+label variable emp_male "total male employment"
+destring emp_male, ignore("NA") replace
+label variable emp_female "total female employment"
+destring emp_female, ignore("NA") replace
+label variable emp_child "child employment, number"
+
+label variable total_wage "total wage"
+
+label variable tot_inp_200809 "total cost of all inputs, 2008"
+destring tot_inp_200809, ignore("NA") replace
+label variable tot_inp_200708 "total cost of all inputs, 2007"
+destring tot_inp_200708, ignore("NA") replace
+label variable tot_inp_200607 "total cost of all inputs, 2006"
+destring tot_inp_200607, ignore("NA") replace
+label variable tot_inp_200506 "total cost of all inputs, 2005"
+destring tot_inp_200506, ignore("NA") replace
+label variable tot_inp_200405 "total cost of all inputs, 2004"
+destring tot_inp_200405, ignore("NA") replace
+
+
+label variable amt_loan_take "loan amount"
+destring amt_loan_take,ignore("NA") replace
+
+label variable own_relign "religion"
+
+label variable closed_y "year closed"
+
+
+
+** unknown or totally useless variables*****************************************
+
+label variable state "state name, string"
+
+label variable register "registered or not, string"
+
+label variable dist_code "district code, 1-70"
+
+label variable cd_block "string"
+
+label variable survey_code "unknown, 1/3"
+
+label variable schem_sts "loan(?),9 types + others + NA"
+
+label variable anci_unit "unknown, yes or no or NA"
+
+label variable own_cat "unkown, 1-4"
+
+label variable acc_exist "unknwon, yes or no"
+
+label variable qua_cer "unknown, 0-5"
+
+label variable exporting "unknown,0-4"
+
+* cannot figure out what these are
+drop ttm_code vt_code clus_sts clus_type clus_adv regn_type
+
+save "G:\My Drive\India_outage_project\census_labeled.dta", replace
+
+********************************************************************************
+* a shortest version
+drop sample_ser_no cd_block survey_code anci_unit own_cat acc_exist ori_purc_val_pm pm_inst_y qua_cer exporting emp_sc emp_st emp_obc emp_other emp_ph prod1_code prod2_code prod3_code prod4_oth_code prod1_unit prod2_unit prod3_unit prod4_oth_unit prod1_qty prod2_qty prod3_qty prod4_oth_qty prod1_val prod2_val prod3_val prod4_oth_val rm1_code rm2_code rm1_unit rm2_unit rm1_qty rm2_qty rm1_val rm2_val rm3_oth_val qty_elec qty_coal qty_oil qty_oth val_elec val_coal val_oil val_oth loan_status is_os amt_loan_os delay_pay decline_net decline_gop reason_sickness major_active pincode multiplier cen_sl_no perm_reg_no perm_reg_y frame_type unit_trac work_sts closed_reas
+
+drop precip_2002 precip_2001 precip_2000 precip_1999 precip_1998 precip_1997 precip_1996 precip_1995 precip_1994 precip_1993 precip_1992
+
+drop cddtemp_2002 cddtemp_2001 cddtemp_2000 cddtemp_1999 cddtemp_1998 cddtemp_1997 cddtemp_1996 cddtemp_1995 cddtemp_1994 cddtemp_1993 cddtemp_1992
+
+drop temp_2002 temp_2001 temp_2000 temp_1999 temp_1998 temp_1997 temp_1996 temp_1995 temp_1994 temp_1993 temp_1992
+
+
+
+save "G:\My Drive\India_outage_project\census_minimum_variables.dta", replace
+
+
+
+
+
+********************************************************************************
+* generate appropriate variables
+* to track each firm
+gen id=_n
+* from 2003-2008
+expand 6, generate(duplicates)
+sort id duplicates
+
+* add year variable
+gen year=2003
+replace year=year[_n-1]+1 if duplicates==1
+label variable year "year"
+* add precipitation variable
+gen prepcip=.
+foreach n of numlist 3/8{
+    replace prepcip=precip_200`n' if year==200`n'
+}
+drop precip_2003 precip_2004 precip_2005 precip_2006 precip_2007
+label variable prepcip "percipitation"
+* add cool day variable
+gen cdd_temp=.
+foreach n of numlist 3/8{
+    replace cdd_temp=cddtemp_200`n' if year==200`n'
+}
+drop cddtemp_2003 cddtemp_2004 cddtemp_2005 cddtemp_2006 cddtemp_2007
+label variable cdd_temp "cool day"
+* add temperature variable
+gen temp=.
+foreach n of numlist 3/8{
+    replace temp=temp_200`n' if year==200`n'
+}
+drop temp_2003 temp_2004 temp_2005 temp_2006 temp_2007
+label variable temp "temperature"
+* add total cost of inputs
+gen tot_cost_input=.
+rename tot_inp_200809 tot_inp_2008
+rename tot_inp_200708 tot_inp_2007
+rename tot_inp_200607 tot_inp_2006
+rename tot_inp_200506 tot_inp_2005
+rename tot_inp_200405 tot_inp_2004
+foreach n of numlist 4/8{
+    replace tot_cost_input=tot_inp_200`n' if year==200`n'
+}
+drop tot_inp_2008 tot_inp_2007 tot_inp_2006 tot_inp_2005 tot_inp_2004
+label variable tot_cost_input "total cost of inputs"
+* add gross value added variable
+gen gva = .
+rename gva_200809 gva_2008
+rename gva_200708 gva_2007
+rename gva_200607 gva_2006
+rename gva_200506 gva_2005
+rename gva_200405 gva_2004
+foreach n of numlist 4/8{
+    replace gva=gva_200`n' if year==200`n'
+}
+drop gva_2008 gva_2007 gva_2006 gva_2005 gva_2004
+label variable gva "gross value added"
+* add nominal revenue
+gen nominal_revenue = .
+rename gop_200809 gop_2008
+rename gop_200708 gop_2007
+rename gop_200607 gop_2006
+rename gop_200506 gop_2005
+rename gop_200405 gop_2004
+destring gop_2008 gop_2007 gop_2006 gop_2005 gop_2004, ignore("NA") replace
+foreach n of numlist 4/8{
+    replace nominal_revenue=gop_200`n' if year==200`n'
+}
+drop gop_2008 gop_2007 gop_2006 gop_2005 gop_2004
+label variable nominal_revenue "nominal revenue (thousands of rubbies, fisical year)"
+* add volume of export
+gen vol_export = .
+rename voe_200708 voe_2007
+rename voe_200607 voe_2006
+rename voe_200506 voe_2005
+destring voe_2007 voe_2006 voe_2005, ignore("NA") replace
+foreach n of numlist 5/7{
+    replace vol_export=voe_200`n' if year==200`n'
+}
+drop voe_2007 voe_2006 voe_2005
+label variable vol_export "value for export"
+
+drop duplicates
+rename id firm_id
+
+* create categorical or dummy variable for strings
+encode register, generate(firm_register)
+label variable firm_register "registered=1,unregistered=2"
+drop register
+
+destring closed_y, ignore("NA") replace
+gen is_closed_in_the_year = .
+replace is_closed_in_the_year = 1 if closed_y == year
+* closed year is probablly not a good variable since there are lots of NA
+label variable is_closed_in_the_year "closed=1, unknown=0" 
+drop closed_y
+
+encode sector_code, generate(sector)
+label variable sector "urban=1, rural=2"
+drop sector_code
+
+destring oper_dur_mm, ignore("NA") replace
+
+* string missing is " "
+replace schem_sts =""  if schem_sts=="NA"
+encode schem_sts, generate(loan_type)
+drop schem_sts
+
+replace org_type="" if org_type=="NA"
+encode org_type, generate(firm_org_type)
+drop org_type
+
+replace power_src="" if power_src=="NA"
+encode power_src, generate(power_source)
+drop power_src
+
+replace oper_nature="" if oper_nature=="NA"
+encode oper_nature, generate(operation_nature)
+drop oper_nature
+
+replace acti_nature="" if acti_nature=="NA"
+encode acti_nature, generate(industry)
+drop acti_nature
+
+replace know_how="" if know_how=="NA"
+encode know_how, generate(invest_source_origknowhow)
+drop know_how
+
+replace women_ent="" if women_ent=="NA"
+encode women_ent, generate(women_entre)
+drop women_ent
+
+replace man_by="" if man_by=="NA"
+encode man_by, generate(manage_by_gender)
+drop man_by
+
+destring init_prod_y, ignore("NA") replace
+gen history_year = year - init_prod_y
+* there are values that are over 2022 and before 1100
+* 1100- is possible, for now leave them in original values
+* for over 2022, it could be either typo or marked as missing
+* cannot tell, therefore mark as missing by making any length of operaion that is negative as zero. This step will also make firms' operational length be zero before they are launched.
+replace history_year = . if history_year<0
+label variable history_year "how many years the firm has been in production"
+* See if the relationship between length and revenue can be simplified
+*bysort firm_id: egen average_revene = mean(nominal_revenue)
+*gen demean_revenue = nominal_revenue-average_revene
+*gen ratio_demean_revenue = demean_revenue/average_revene
+*scatter ratio_demean_revenue history_year if history_year < 200
+* results: almost horizontal 
+
+
+* accidentally dropped firm id. here is how I add it back:
+* gen firm_id=1
+* replace firm_id=firm_id+(id-1)/6 if year==2003
+* replace firm_id=firm_id[_n-1] if year!=2003
+
+replace emp_child =""  if emp_child=="NA"
+encode emp_child, generate(child_emp)
+drop emp_child
+
+destring total_wage, ignore("NA") replace
+
+replace own_relign =""  if own_relign =="NA"
+encode own_relign , generate(religion)
+drop own_relign 
+
+save "G:\My Drive\India_outage_project\census_minimum_variables.dta", replace
+
+
+
+
+
+
+*********************************************************************************
+* merge outage&iv together with census
+* not adjusting for fisical year
+merge m:1 stateid year using "G:\My Drive\India_outage_project\PowerSupplyPositionofStates\outage_and_IV_dropmissing.dta"
+
+save "G:\My Drive\India_outage_project\merge_all.dta", replace
+
+* adjusting for fisical year
+clear 
+use "G:\My Drive\India_outage_project\census_minimum_variables.dta"
+merge m:1 stateid year using "G:\My Drive\India_outage_project\PowerSupplyPositionofStates\outage_and_IV_dropmissing_fisical.dta"
+
+save "G:\My Drive\India_outage_project\merge_all_fisical.dta", replace
+
+
+
+
+
+
+
+
+
+
+
+*********************************************************************************
+*********************************************************************************
+*********************************************************************************
+* THE REGRESSIONS
+
+* cannot tell the unknown versus no outage.
+replace is_closed_in_the_year=0 if is_closed_in_the_year==.
+
+* A simplest one
+drop if _merge==1
+drop if year < 2003
+
+* verify the iv 
+reg outage demean_hydro_ratio_IV
+reg outage demean_hydro_ratio_IV_fisical
+reg shortage_percentage demean_hydro_ratio_IV
+reg shortage_percentage demean_hydro_ratio_IV_fisical
+reg nominal_revenue demean_hydro_ratio_IV
+reg nominal_revenue demean_hydro_ratio_IV_fisical
+reg gva demean_hydro_ratio_IV
+reg gva demean_hydro_ratio_IV_fisical
+
+
+
+********************************************************************************
+* No fisical year adjustment
+
+* outage + renevue**************************************************************
+* simple 2sls
+ivregress 2sls nominal_revenue i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( outage = demean_hydro_ratio_IV )
+* clustering
+ivregress 2sls nominal_revenue i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( outage = demean_hydro_ratio_IV ), cluster(firm_id)
+* boostrap
+* robustness
+
+* outage + gva******************************************************************
+* simple 2sls
+ivregress 2sls gva i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( outage = demean_hydro_ratio_IV )
+* clustering
+ivregress 2sls gva i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( outage = demean_hydro_ratio_IV ), cluster(firm_id)
+* boostrap
+* robustness
+
+* shortage share + revenue******************************************************
+* simple 2sls
+ivregress 2sls nominal_revenue i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( shortage_percentage = demean_hydro_ratio_IV )
+* clustering
+ivregress 2sls nominal_revenue i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( shortage_percentage = demean_hydro_ratio_IV ), cluster(firm_id)
+* boostrap
+* robustness
+
+* shortage percentage + gva*****************************************************
+ivregress 2sls gva i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( shortage_percentage = demean_hydro_ratio_IV )
+* clustering
+ivregress 2sls gva i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( shortage_percentage = demean_hydro_ratio_IV ), cluster(firm_id)
+* boostrap
+* robustness
+
+
+
+********************************************************************************
+* Fisical year adjustment
+
+* outage + renevue**************************************************************
+* simple 2sls
+ivregress 2sls nominal_revenue i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( outage = demean_hydro_ratio_IV_fisical )
+* clustering
+ivregress 2sls nominal_revenue i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( outage = demean_hydro_ratio_IV_fisical ), cluster(firm_id)
+
+* nonparametric instrument regression (npiv)---failed
+npiv nominal_revenue outage demean_hydro_ratio_IV_fisical
+
+* semiparametric regression
+xi:semipar nominal_revenue i.stateid i.year i.sector i.industry i.firm_org_type i.power_source, nonpar(outage) xtitle(outage) ci
+
+* boostrap with 2sls
+ivregress 2sls nominal_revenue i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( outage = demean_hydro_ratio_IV_fisical ), vce(bootstrap, reps(100) seed(123))
+
+
+* robustness
+
+* outage + gva******************************************************************
+* simple 2sls
+ivregress 2sls gva i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( outage = demean_hydro_ratio_IV_fisical )
+* clustering
+ivregress 2sls gva i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( outage = demean_hydro_ratio_IV_fisical ), cluster(firm_id)
+* boostrap
+* robustness
+
+* shortage share + revenue******************************************************
+* simple 2sls
+ivregress 2sls nominal_revenue i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( shortage_percentage = demean_hydro_ratio_IV_fisical )
+* clustering
+ivregress 2sls nominal_revenue i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( shortage_percentage = demean_hydro_ratio_IV_fisical ), cluster(firm_id)
+* boostrap
+* robustness
+
+* shortage percentage + gva*****************************************************
+ivregress 2sls gva i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( shortage_percentage = demean_hydro_ratio_IV_fisical )
+* clustering
+ivregress 2sls gva i.stateid i.year mkt_val_fa emp_total vol_export i.sector i.industry i.firm_org_type i.power_source ( shortage_percentage = demean_hydro_ratio_IV_fisical ), cluster(firm_id)
+* boostrap
+* robustness
+
+
+
+
+****bootstrap
+use "G:\My Drive\India_outage_project\PowerSupplyPositionofStates\outage_and_IV_dropmissing_fisical.dta"
+reg shortage_percentage demean_hydro_ratio_IV
+predict shortage_percentage_hat
+save "G:\My Drive\India_outage_project\PowerSupplyPositionofStates\outage_and_IV_1spredicted.dta", replace
+
+use "G:\My Drive\India_outage_project\census_minimum_variables.dta"
+merge m:1 stateid year using "G:\My Drive\India_outage_project\PowerSupplyPositionofStates\outage_and_IV_1spredicted.dta"
+* cannot tell the unknown versus no outage.
+replace is_closed_in_the_year=0 if is_closed_in_the_year==.
+
+* A simplest one
+drop if _merge==1
+drop if year < 2003
+
+save "G:\My Drive\India_outage_project\PowerSupplyPositionofStates\all_with_predicted_1st_Step.dta", replace
+
+* Run the bootstrap
+gen tag_gva = 1
+replace tag_gva = 0 if gva==.
+by stateid: egen obs_in_state_gva = total(tag_gva)
+sum obs_in_state_gva
+scalar obs_in_state_gva_max = r(max)
+gen expand_multiplier_gva = floor(obs_in_state_gva_max/obs_in_state_gva)+1
+replace expand_multiplier_gva = 1 if expand_multiplier_gva == 2 
+expand expand_multiplier_gva
+
+bootstrap, strata(stateid) size(obs_in_state_gva_max) reps(5): regress gva shortage_percentage_hat
+
+
+save "G:\My Drive\India_outage_project\PowerSupplyPositionofStates\all_with_predicted_1st_Step_gva.dta", replace
+
+
+
+
+
+
+
+
+
+
+*LCM was too large (do not use this method)
+*gen tag_gva = 1
+*replace tag_gva = 0 if gva==.
+*by stateid: egen obs_in_state_gva = total(tag_gva)
+*levelsof obs_in_state_gva, local(obs_in_state_gva_local)
+* wasn't succeed in extracting numbers out automatically
+*lcmm 6 911 1397 1453 2004 2301 4111 4879 5196 5374 8568 10007 11007 13335 27527 30903 36589 52950 58282 67182 135507 140143 321190 415760 450972 483095 702397
+*gen lcm_gva = r(lcm)
+*gen expand_multiplier_gva = lcm_gva/obs_in_state_gva
+
+* check
+*lcmm 30903 36589 140143 1397 10007 1453 4111 13335 11007 911 8568 58282 52950 67182 27527 321190 702397 2004 4879 135507 415760 5374 6 450972 483095 5196 2301
+
+** Programs
+* GCD
+cap program drop gcd
+program define gcd, rclass
+    * if only 1 number is fed, display the number
+    if "`2'" == "" {
+        return scalar gcd = `1'
+    }
+	* Use Euclidean method
+	* Loop until the second term becomes zero
+	* Forward the second term to the first term in the next round
+	* Find the remainder of [1/2] and assign it to the seocnd term
+	* mod(1,2)=1-2*floor(1/2)
+	* floor(1/2)=maximum integer that has n<=1/2
+    else {
+        while `2' {
+            local temp2 = `2'
+            local 2 = mod(`1',`2')
+            local 1 = `temp2'
+        }
+        return scalar gcd = `1'
+    }
+end
+
+* LCM
+cap program drop lcm
+program define lcm, rclass
+    if "`2'" == "" {
+        return scalar lcm = `1'
+    }
+    else {
+        gcd `1' `2'
+        return scalar lcm = `1' * `2' / r(gcd)
+    }
+end
+
+* GCD of arbitrarily long list of integers
+cap program drop gcdm
+program define gcdm, rclass
+    clear results
+    foreach i of local 0 {
+        gcd `i' `r(gcd)'
+    }
+    return scalar gcd = r(gcd)
+	di "`r(gcd)'"
+end
+
+* LCM of arbitrarily long list of integers
+cap program drop lcmm
+program define lcmm, rclass
+    clear results
+    foreach i of local 0 {
+        lcm `i' `r(lcm)'
+    }
+    return scalar lcm = r(lcm)
+	di "`r(lcm)'"
+end
